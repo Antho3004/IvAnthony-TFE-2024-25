@@ -28,7 +28,7 @@ const Inscription = () => {
     return (
         <div className="container d-flex justify-content-center align-items-center vh-100"> {/* Centrer le conteneur */}
             <div className="form-container p-4 border rounded shadow-sm bg-light"> {/* Formulaire avec Bootstrap */}
-                <h2>Inscription</h2>
+                <h2 className="text-center">Inscription</h2> {/* Centrer le titre */}
                 <form onSubmit={gererInscription}>
                     <div className="mb-3">
                         <input
@@ -59,8 +59,8 @@ const Inscription = () => {
                     </div>
                     <button type="submit" className="btn btn-primary w-100">Inscription</button>
                 </form>
-                {erreur && <p className="text-danger">{erreur}</p>}
-                {succes && <p className="text-success">{succes}</p>}
+                {erreur && <p className="text-danger text-center">{erreur}</p>} {/* Message d'erreur centré */}
+                {succes && <p className="text-success text-center">{succes}</p>} {/* Message de succès centré */}
             </div>
         </div>
     );
