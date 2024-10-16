@@ -1,20 +1,46 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
 import Inscription from './components/Inscription';
-import Connexion from './components/Connexion';
+import Connexion from './components/connexion';
+import Calendrier from './components/calendrier';
+import ProtectedRoute from './components/ProctectionRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const gererDeconnexion = () => {
+    // Supprimer le token du localStorage
+    localStorage.removeItem('token');
+    // Rediriger vers la page de connexion
+    navigate('/connexion');
+  };
 
   return (
     <nav className="navbar navbar-light bg-light">
-      <div className="container-fluid justify-content-end"> {/* Utilisation de container-fluid et justify-content-end */}
-        {location.pathname === '/inscription' ? (
-          <Link className="navbar-brand" to="/connexion">Se connecter</Link>
-        ) : (
-          <Link className="navbar-brand" to="/inscription">Inscription</Link>
-        )}
+      <div className="container-fluid">
+
+        {/* Nav links */}
+        <div className="d-flex ms-auto">
+          {localStorage.getItem('token') ? (
+            <span
+              className="navbar-text text-danger me-3"
+              style={{ cursor: 'pointer' }}
+              onClick={gererDeconnexion}
+            >
+              Déconnexion
+            </span>
+          ) : (
+            <>
+              {location.pathname === '/inscription' ? (
+                <Link className="nav-link" to="/connexion">Se connecter</Link>
+              ) : (
+                <Link className="nav-link" to="/inscription">Inscription</Link>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
@@ -24,12 +50,17 @@ function App() {
   return (
     <Router>
       <div>
-        <Navbar /> {/* Utilisation de la Navbar conditionnelle */}
+        <Navbar /> {/* Navbar conditionnelle */}
 
         <Routes>
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/connexion" element={<Connexion />} />
-          <Route path="/" element={<Connexion />} /> {/* Route par défaut */}
+          <Route path="/calendrier" element={
+            <ProtectedRoute>
+              <Calendrier />
+            </ProtectedRoute>
+          } />
+          <Route path="/" element={<Connexion />} />
         </Routes>
       </div>
     </Router>
