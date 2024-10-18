@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
+import { FaCog } from 'react-icons/fa'; // Importer l'icône d'écrou
 import Inscription from './components/Inscription';
-import Connexion from './components/connexion';
+import Connexion from './components/Connexion';
 import Calendrier from './components/calendrier';
 import ProtectedRoute from './components/ProctectionRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -24,21 +25,22 @@ function Navbar() {
         {/* Nav links */}
         <div className="d-flex ms-auto">
           {localStorage.getItem('token') ? (
-            <span
-              className="navbar-text text-danger me-3"
-              style={{ cursor: 'pointer' }}
-              onClick={gererDeconnexion}
-            >
-              Déconnexion
-            </span>
-          ) : (
             <>
-              {location.pathname === '/inscription' ? (
-                <Link className="nav-link" to="/connexion">Se connecter</Link>
-              ) : (
-                <Link className="nav-link" to="/inscription">Inscription</Link>
-              )}
+              <Link to="/parametres" className="navbar-text me-3" style={{ cursor: 'pointer' }}>
+                <FaCog size={24} /> {/* l'icône écrou */}
+              </Link>
+
+              {/* Bouton de déconnexion */}
+              <span
+                className="navbar-text text-danger me-3"
+                style={{ cursor: 'pointer' }}
+                onClick={gererDeconnexion}
+              >
+                Déconnexion
+              </span>
             </>
+          ) : (
+            <></>
           )}
         </div>
       </div>
@@ -61,6 +63,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/" element={<Connexion />} />
+          <Route path="/parametres" element={<div>Page des paramètres</div>} />
         </Routes>
       </div>
     </Router>

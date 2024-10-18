@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';  // Import du Link
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Inscription = () => {
@@ -26,8 +27,8 @@ const Inscription = () => {
     };
 
     return (
-        <div className="container d-flex justify-content-center align-items-center vh-100"> {/* Centrer le conteneur */}
-            <div className="form-container p-4 border rounded shadow-sm bg-light"> {/* Formulaire */}
+        <div className="container d-flex justify-content-center align-items-center vh-100">
+            <div className="form-container p-4 border rounded shadow-sm bg-light">
                 <h2 className="text-center">Inscription</h2>
                 <form onSubmit={gererInscription}>
                     <div className="mb-3">
@@ -61,6 +62,9 @@ const Inscription = () => {
                 </form>
                 {erreur && <p className="text-danger text-center">{erreur}</p>}
                 {succes && <p className="text-success text-center">{succes}</p>}
+                <p className="text-center mt-3">
+                    Vous avez déjà un compte ? <Link to="/connexion">Connectez-vous</Link>
+                </p>
             </div>
         </div>
     );

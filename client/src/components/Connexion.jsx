@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';  // Import du hook useNavigate
+import { useNavigate, Link } from 'react-router-dom';
 
 const Connexion = () => {
     const [email, setEmail] = useState('');
     const [motDePasse, setMotDePasse] = useState('');
     const [erreur, setErreur] = useState('');
     const [succes, setSucces] = useState('');
-    const navigate = useNavigate();  // Initialisation du hook
+    const navigate = useNavigate();
 
     const gererConnexion = async (e) => {
         e.preventDefault();
@@ -17,7 +17,6 @@ const Connexion = () => {
                 mot_de_passe: motDePasse,
             });
 
-            // Sauvegarder le token dans le localStorage
             localStorage.setItem('token', response.data.token);
             setSucces(response.data.message);
             setErreur('');
@@ -57,6 +56,9 @@ const Connexion = () => {
                 </form>
                 {erreur && <p className="text-danger text-center">{erreur}</p>}
                 {succes && <p className="text-success text-center">{succes}</p>}
+                <p className="text-center mt-3">
+                    Vous n'avez pas de compte ?<Link to="/inscription">Cliquez ici</Link>
+                </p>
             </div>
         </div>
     );
