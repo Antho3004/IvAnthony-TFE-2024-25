@@ -1,20 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaCog } from 'react-icons/fa'; // Importer l'icône d'écrou
+import { FaCog } from 'react-icons/fa';
 import Inscription from './components/Inscription';
 import Connexion from './components/Connexion';
 import Calendrier from './components/calendrier';
+
 import ProtectedRoute from './components/ProctectionRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Navbar() {
-  const location = useLocation();
   const navigate = useNavigate();
 
   const gererDeconnexion = () => {
-    // Supprimer le token du localStorage
     localStorage.removeItem('token');
-    // Rediriger vers la page de connexion
     navigate('/connexion');
   };
 
@@ -63,7 +61,6 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/" element={<Connexion />} />
-          <Route path="/parametres" element={<div>Page des paramètres</div>} />
         </Routes>
       </div>
     </Router>
