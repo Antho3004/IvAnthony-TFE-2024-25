@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Connexion = () => {
     const [email, setEmail] = useState('');
     const [motDePasse, setMotDePasse] = useState('');
     const [erreur, setErreur] = useState('');
     const [succes, setSucces] = useState('');
+    const navigate = useNavigate();
 
     const gererConnexion = async (e) => {
         e.preventDefault();
@@ -15,8 +16,13 @@ const Connexion = () => {
                 email,
                 mot_de_passe: motDePasse,
             });
+
+            localStorage.setItem('token', response.data.token);
             setSucces(response.data.message);
             setErreur('');
+
+            // Rediriger vers la page calendrier après la connexion réussie
+            navigate('/calendrier');
         } catch (err) {
             setErreur(err.response.data.erreur || 'Une erreur est survenue');
             setSucces('');
@@ -24,9 +30,9 @@ const Connexion = () => {
     };
 
     return (
-        <div className="container d-flex justify-content-center align-items-center vh-100"> {/* Centrer le conteneur */}
-            <div className="form-container p-4 border rounded shadow-sm bg-light"> {/* Formulaire avec Bootstrap */}
-                <h2 className="text-center">Connexion</h2> {/* Centrer le titre */}
+        <div className="container d-flex justify-content-center align-items-center vh-100">
+            <div className="form-container p-4 border rounded shadow-sm bg-light">
+                <h2 className="text-center">Connexion</h2>
                 <form onSubmit={gererConnexion}>
                     <div className="mb-3">
                         <input
@@ -48,8 +54,11 @@ const Connexion = () => {
                     </div>
                     <button type="submit" className="btn btn-primary w-100">Se connecter</button>
                 </form>
-                {erreur && <p className="text-danger text-center">{erreur}</p>} {/* Message d'erreur centré */}
-                {succes && <p className="text-success text-center">{succes}</p>} {/* Message de succès centré */}
+                {erreur && <p className="text-danger text-center">{erreur}</p>}
+                {succes && <p className="text-success text-center">{succes}</p>}
+                <p className="text-center mt-3">
+                    Vous n'avez pas de compte ?<Link to="/inscription">Cliquez ici</Link>
+                </p>
             </div>
         </div>
     );
