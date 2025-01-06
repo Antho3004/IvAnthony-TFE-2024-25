@@ -227,7 +227,7 @@ const Calendrier = () => {
 
                 {optionSelectionnee === 'personnaliser' && (
                     <>
-                        {/* Champs pour la personnalisation des jours */}
+                        <h5>Option 1</h5>
                         <div className="mb-3">
                             <label>Jours de répétition:</label>
                             <div className="d-flex flex-wrap">
@@ -267,6 +267,7 @@ const Calendrier = () => {
                             />
                         </div>
 
+                        <h5>Option 2</h5>
                         <div className="mb-3">
                             <label>Plage de dates (Du/Au):</label>
                             <div className="d-flex">
