@@ -319,7 +319,7 @@ const Calendrier = () => {
                     <div>
                         <label>Date:</label>
                         <input
-                            type="date"  // Remplacez "datetime-local" par "date"
+                            type="date"
                             value={newDate}
                             onChange={(e) => setNewDate(e.target.value)}
                             className="form-control"

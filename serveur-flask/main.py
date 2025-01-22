@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -18,6 +18,7 @@ CORS(app)
 
 # Obtenez la clé secrète depuis l'environnement
 SECRET_KEY = os.getenv('SECRET_KEY')
+RASPBERRY_API_KEY = os.getenv('RASPBERRY_API_KEY')
 
 def create_connection():
     connection = None
@@ -46,17 +47,27 @@ def token_requis(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
+
+        # Vérification du header Authorization ou de X-API-KEY
         if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split()[1]  # Enlève le mot "Bearer"
+            token = request.headers['Authorization'].split()[1]  # Enlève "Bearer"
+        elif 'X-API-KEY' in request.headers:
+            token = request.headers['X-API-KEY']  # Prend la clé API
+
         if not token:
             return jsonify({"erreur": "Token manquant !"}), 403
+
+        if token == os.getenv('RASPBERRY_API_KEY'):
+            # La clé API est valide
+            return f(*args, **kwargs)
+
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            print("Token validé, données:", data)  # Log des données décodées
         except ExpiredSignatureError:
             return jsonify({"erreur": "Token expiré !"}), 403
         except InvalidTokenError:
             return jsonify({"erreur": "Token invalide !"}), 403
+
         return f(*args, **kwargs)
     return decorated
 
@@ -126,40 +137,34 @@ def deconnexion():
 @app.route('/api/calendrier', methods=['GET'])
 @token_requis
 def get_calendrier():
-    token = request.headers.get('Authorization').split()[1]
-    data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-    email = data.get('email')
-
     connection = create_connection()
     cursor = connection.cursor()
 
     try:
-        cursor.execute("SELECT id_utilisateur FROM utilisateurs WHERE email = %s", (email,))
-        utilisateur = cursor.fetchone()
+        cursor.execute("SELECT heure, date FROM type_reveil")
+        events = cursor.fetchall()
 
-        if utilisateur:
-            id_utilisateur = utilisateur[0]
-            cursor.execute("SELECT heure, date FROM type_reveil WHERE id_utilisateur = %s", (id_utilisateur,))
-            events = cursor.fetchall()
+        # Formater les événements
+        formatted_events = []
+        for event in events:
+            heure_int = event[0]  # Exemple : 830 pour 08h30
+            date = event[1]
 
-            # Formater l'heure pour qu'elle s'affiche sous le format "08h30"
-            formatted_events = []
-            for event in events:
-                heure_int = event[0]  # ex: 830 pour 08h30
-                date = event[1]
+            heure_str = f"{heure_int:04d}"  # Assurer 4 chiffres : "0830"
+            formatted_heure = f"{heure_str[:2]}:{heure_str[2:]}"  # "0830" -> "08:30"
 
-                # Conversion de l'heure au format hhmm (0830) en "08h30"
-                heure_str = f"{heure_int:04d}"  # Assurer que l'heure soit toujours à 4 chiffres
-                formatted_heure = f"{heure_str[:2]}h{heure_str[2:]}"  # Formater en "hhmm" -> "hhhmm"
+            # Si `date` est une chaîne, la garder telle quelle, sinon, la formater
+            if isinstance(date, str):
+                formatted_date = date
+            else:
+                formatted_date = date.strftime('%Y-%m-%d')
 
-                formatted_events.append({
-                    "title": formatted_heure,
-                    "date": date
-                })
+            formatted_events.append({
+                "time": formatted_heure,
+                "date": formatted_date
+            })
 
-            return jsonify({"events": formatted_events}), 200
-        else:
-            return jsonify({"erreur": "Utilisateur non trouvé"}), 404
+        return jsonify({"events": formatted_events}), 200
     except Error as e:
         return jsonify({"erreur": f"Erreur lors de la récupération des événements: {e}"}), 500
     finally:
@@ -289,5 +294,117 @@ def supprimer_evenement():
         cursor.close()
         connection.close()
 
+@app.route('/api/parametre/utilisateur', methods=['PUT'])
+@token_requis
+def update_user():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    new_password = data.get('newPassword')
+
+    token = request.headers.get('Authorization').split()[1]
+    decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    current_email = decoded.get('email')
+
+    connection = create_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("SELECT mot_de_passe FROM utilisateurs WHERE email = %s", (current_email,))
+        utilisateur = cursor.fetchone()
+
+        if not utilisateur or not bcrypt.checkpw(password.encode('utf-8'), utilisateur[0].encode('utf-8')):
+            return jsonify({"erreur": "Mot de passe actuel incorrect"}), 401
+
+        cursor.execute("""
+            UPDATE utilisateurs 
+            SET nom_utilisateur = %s, email = %s, mot_de_passe = %s 
+            WHERE email = %s
+        """, (username, email, bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), current_email))
+        connection.commit()
+
+        return jsonify({"message": "Informations mises à jour avec succès"}), 200
+    except Error as e:
+        return jsonify({"erreur": f"Erreur lors de la mise à jour des informations: {e}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/parametre/utilisateur', methods=['DELETE'])
+@token_requis
+def delete_user():
+    token = request.headers.get('Authorization').split()[1]
+    decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    email = decoded.get('email')
+
+    connection = create_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("DELETE FROM utilisateurs WHERE email = %s", (email,))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"erreur": "Utilisateur non trouvé"}), 404
+
+        return jsonify({"message": "Compte supprimé avec succès"}), 200
+    except Error as e:
+        return jsonify({"erreur": f"Erreur lors de la suppression du compte: {e}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/parametre/alarme/settings', methods=['PUT'])
+@token_requis
+def update_alarm_settings():
+    data = request.get_json()
+    repeat_interval = data.get('repeatInterval')
+
+    if not repeat_interval:
+        return jsonify({"erreur": "Intervalle de répétition requis"}), 400
+
+    token = request.headers.get('Authorization').split()[1]
+    decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    email = decoded.get('email')
+
+    connection = create_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("UPDATE utilisateurs SET intervalle_repetition = %s WHERE email = %s",
+                       (repeat_interval, email))
+        connection.commit()
+
+        return jsonify({"message": "Paramètres de l'alarme mis à jour avec succès"}), 200
+    except Error as e:
+        return jsonify({"erreur": f"Erreur lors de la mise à jour des paramètres: {e}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/parametre/alarme/upload', methods=['POST'])
+@token_requis
+def upload_alarm_sound():
+    if 'file' not in request.files:
+        return jsonify({"erreur": "Fichier manquant"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"erreur": "Nom de fichier invalide"}), 400
+
+    token = request.headers.get('Authorization').split()[1]
+    decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    email = decoded.get('email')
+
+    try:
+        filepath = f"uploads/alarms/{email}_{file.filename}"
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        file.save(filepath)
+
+        return jsonify({"message": "Sonnerie téléchargée avec succès", "filepath": filepath}), 201
+    except Exception as e:
+        return jsonify({"erreur": f"Erreur lors du téléchargement: {e}"}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', debug=True, port=8080)
